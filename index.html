@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CyberVault Pro | Production Knowledge Graph & IDE</title>
+  
+  <!-- PWA & SEO Meta -->
+  <meta name="description" content="Production-grade Cyber-Obsidian Markdown IDE & Interactive Knowledge Graph Workstation">
+  <meta name="theme-color" content="#10b981">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23030605'/><circle cx='50' cy='50' r='30' fill='none' stroke='%2310b981' stroke-width='6'/><circle cx='50' cy='50' r='12' fill='%2310b981'/><line x1='50' y1='50' x2='25' y2='25' stroke='%2310b981' stroke-width='2'/></svg>">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Hidden File Input for Importing .md files -->
+  <input type="file" id="file-import-input" accept=".md,.txt,.json" style="display: none;">
+
+  <!-- Keyboard Shortcuts Cheat Sheet Modal (F1 / ?) -->
+  <div class="modal-backdrop" id="shortcuts-modal">
+    <div class="shortcuts-card">
+      <div class="card-header">
+        <h3>⚡ KEYBOARD SHORTCUTS & USER MANUAL</h3>
+        <button class="modal-close" id="btn-close-shortcuts">✕</button>
+      </div>
+      <div class="shortcuts-grid">
+        <div class="shortcut-row"><span>Quick Open / Command Palette</span> <kbd>Ctrl + K</kbd></div>
+        <div class="shortcut-row"><span>Toggle Cyber Terminal REPL</span> <kbd>Ctrl + `</kbd></div>
+        <div class="shortcut-row"><span>New Knowledge Note</span> <kbd>Ctrl + N</kbd></div>
+        <div class="shortcut-row"><span>Toggle Edit / Read Mode</span> <kbd>Ctrl + E</kbd></div>
+        <div class="shortcut-row"><span>Save Active Note</span> <kbd>Ctrl + S</kbd></div>
+        <div class="shortcut-row"><span>WikiLink Connection Syntax</span> <kbd>[[Note Title]]</kbd></div>
+        <div class="shortcut-row"><span>Graph Viewport Reset</span> <kbd>Double Click Graph</kbd></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Command Palette Modal (Ctrl+K) -->
+  <div class="modal-backdrop" id="command-modal">
+    <div class="command-palette">
+      <div class="palette-input-wrap">
+        <span class="palette-icon">⚡</span>
+        <input type="text" id="palette-search" placeholder="Type a command or search notes (Ctrl+K)..." autocomplete="off">
+        <span class="palette-esc">ESC</span>
+      </div>
+      <div class="palette-results" id="palette-results"></div>
+    </div>
+  </div>
+
+  <!-- New Note Creation Dialog Modal -->
+  <div class="modal-backdrop" id="new-note-modal">
+    <div class="prompt-card">
+      <div class="card-header">
+        <h3>📝 CREATE NEW NOTE</h3>
+        <button class="modal-close" id="btn-close-note-modal">✕</button>
+      </div>
+      <div class="prompt-body">
+        <label for="new-note-title-input">Note Title / Subject:</label>
+        <input type="text" id="new-note-title-input" placeholder="e.g. Distributed Database Consensus" autocomplete="off">
+        <div class="prompt-actions">
+          <button class="btn-cancel" id="btn-cancel-new-note">Cancel</button>
+          <button class="btn-confirm" id="btn-confirm-new-note">Create Note & Node</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outer Main Application Window Frame -->
+  <div class="window-shell">
+
+    <!-- Top Window Title & Tab Bar -->
+    <header class="window-header">
+      <div class="nav-controls">
+        <button class="nav-btn" id="btn-nav-back" title="Back (Alt+Left)">←</button>
+        <button class="nav-btn" id="btn-nav-forward" title="Forward (Alt+Right)">→</button>
+      </div>
+
+      <!-- Quick Command Bar Trigger -->
+      <div class="quick-command-trigger" id="btn-open-palette" title="Quick Open (Ctrl+K)">
+        <span class="cmd-icon">🔍</span>
+        <span class="cmd-label">Quick Search (Ctrl+K)</span>
+        <span class="cmd-badge">⌘K</span>
+      </div>
+
+      <!-- Top Tabs -->
+      <div class="tabs-container" id="tabs-container">
+        <div class="tab-item active" data-file-id="auth-p1">
+          <span class="tab-icon">📄</span>
+          <span class="tab-title">Authentication & Au...</span>
+          <span class="tab-close" title="Close Tab">✕</span>
+        </div>
+        <div class="tab-item" data-file-id="graph-view">
+          <span class="tab-icon">🕸️</span>
+          <span class="tab-title">Graph view</span>
+          <span class="tab-close" title="Close Tab">✕</span>
+        </div>
+        <button class="new-tab-btn" id="btn-new-tab" title="Create New Note (Ctrl+N)">+</button>
+      </div>
+
+      <!-- Window System Actions -->
+      <div class="window-actions">
+        <!-- Install PWA Button (Hidden by default, shown if install prompt available) -->
+        <button class="win-btn pwa-btn" id="btn-pwa-install" title="Install Desktop PWA App" style="display: none;">📥 Install</button>
+        <button class="win-btn" id="btn-export-vault" title="Export Vault (JSON / Backup)">💾</button>
+        <button class="win-btn" id="btn-import-vault" title="Import Markdown File (.md)">📤</button>
+        <button class="win-btn" id="btn-toggle-sound" title="Toggle UI Sound Synthesizer">🔊</button>
+        <button class="win-btn" id="btn-toggle-terminal" title="Toggle Terminal (Ctrl+`)">💻</button>
+        <button class="win-btn win-close" id="btn-win-reload" title="Reset Viewport">⟲</button>
+      </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <div class="workspace-body">
+
+      <!-- 1. Left Mini Activity Rail -->
+      <aside class="activity-rail">
+        <div class="rail-top">
+          <button class="rail-btn active" data-panel="explorer" title="Files Explorer (Ctrl+Shift+E)">📁</button>
+          <button class="rail-btn" id="rail-btn-search" title="Search Everything (Ctrl+F)">🔍</button>
+          <button class="rail-btn" id="rail-btn-bookmarks" title="Bookmarks">🔖</button>
+          <button class="rail-btn" id="rail-btn-graph" title="Graph View">🕸️</button>
+          <button class="rail-btn" id="rail-btn-terminal" title="Interactive Terminal">💻</button>
+          <button class="rail-btn" id="rail-btn-export" title="Export Full Vault">💾</button>
+        </div>
+        <div class="rail-bottom">
+          <button class="rail-btn" id="btn-help" title="Keyboard Shortcuts & Docs (F1)">❓</button>
+          <button class="rail-btn" id="btn-settings" title="Settings">⚙️</button>
+        </div>
+      </aside>
+
+      <!-- 2. File Explorer Tree Pane -->
+      <section class="explorer-pane" id="explorer-pane">
+        <div class="explorer-toolbar">
+          <span class="vault-name">VAULT // PRODUCTION</span>
+          <div class="tools-group">
+            <button class="tool-btn" id="btn-new-note" title="New Note (Ctrl+N)">📝</button>
+            <button class="tool-btn" id="btn-import-md" title="Import Local Markdown File">📥</button>
+            <button class="tool-btn" id="btn-collapse-tree" title="Collapse All">⇱</button>
+          </div>
+        </div>
+
+        <!-- Quick filter in explorer -->
+        <div class="tree-search-bar">
+          <input type="text" id="tree-search-input" placeholder="Filter vault files..." autocomplete="off">
+        </div>
+
+        <div class="file-tree" id="file-tree">
+          <!-- Folder item: 96-node.js -->
+          <div class="tree-item folder closed" data-folder="96-node.js">
+            <span class="arrow">▶</span>
+            <span class="icon">📦</span>
+            <span class="name">96-node.js</span>
+          </div>
+
+          <!-- Folder item: 97-Backend (Active/Open) -->
+          <div class="tree-item folder open active-folder" data-folder="97-Backend">
+            <span class="arrow">▼</span>
+            <span class="icon">🗄️</span>
+            <span class="name">97-Backend</span>
+          </div>
+
+          <div class="tree-children">
+            <div class="tree-item folder closed" data-folder="network">
+              <span class="arrow">▶</span>
+              <span class="icon">📁</span>
+              <span class="name">network</span>
+            </div>
+
+            <div class="tree-item folder open" data-folder="principles">
+              <span class="arrow">▼</span>
+              <span class="icon">📁</span>
+              <span class="name">principles of backend</span>
+            </div>
+
+            <div class="tree-children" id="tree-custom-container">
+              <div class="tree-item folder open" data-folder="auth">
+                <span class="arrow">▼</span>
+                <span class="icon">📂</span>
+                <span class="name">Authentication & Au...</span>
+              </div>
+              <div class="tree-children" id="auth-subfiles">
+                <div class="tree-item file active-file" data-file="auth-p1">
+                  <span class="icon">📄</span>
+                  <span class="name">Authentication & Au...</span>
+                </div>
+                <div class="tree-item file" data-file="auth-jwt">
+                  <span class="icon">📄</span>
+                  <span class="name">Authentication JWT ...</span>
+                </div>
+                <div class="tree-item file" data-file="auth-oauth">
+                  <span class="icon">📄</span>
+                  <span class="name">Authentication OAuth</span>
+                </div>
+                <div class="tree-item file" data-file="shared-secrets">
+                  <span class="icon">📄</span>
+                  <span class="name">Shared Secrets & Keys</span>
+                </div>
+              </div>
+
+              <div class="tree-item file" data-file="bg-queue">
+                <span class="icon">📄</span>
+                <span class="name">background task queue</span>
+              </div>
+              <div class="tree-item file" data-file="caching">
+                <span class="icon">📄</span>
+                <span class="name">caching mechanisms</span>
+              </div>
+              <div class="tree-item file" data-file="postgres">
+                <span class="icon">📄</span>
+                <span class="name">Database with postg...</span>
+              </div>
+              <div class="tree-item file" data-file="rest">
+                <span class="icon">📄</span>
+                <span class="name">REST API principles</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="user-status-bar">
+          <span class="dot-online"></span>
+          <span class="username">Tareq Aboushi</span>
+          <span class="vault-size" id="vault-count-badge">14 Notes</span>
+        </div>
+      </section>
+
+      <!-- 3. Central Note Editor / Viewer Pane (With Live Editor & WikiLinks!) -->
+      <main class="editor-pane" id="editor-pane">
+        <!-- Breadcrumbs bar with Mode Toggle -->
+        <div class="editor-breadcrumbs">
+          <div class="crumbs" id="crumbs-container">
+            <span class="crumb">97-Backend</span>
+            <span class="sep">/</span>
+            <span class="crumb">principles</span>
+            <span class="sep">/</span>
+            <span class="crumb">Authentication</span>
+            <span class="sep">/</span>
+            <span class="crumb active" id="current-crumb">Authentication & Authorization p1</span>
+          </div>
+
+          <div class="editor-actions">
+            <!-- Mode Switcher: Read Mode vs Edit Mode -->
+            <button class="mode-toggle-btn active" id="btn-toggle-read" title="Reading Mode">📖 Read</button>
+            <button class="mode-toggle-btn" id="btn-toggle-edit" title="Live Edit Mode (Ctrl+E)">✏️ Edit</button>
+            <button class="action-btn" id="btn-delete-active-note" title="Delete Note">🗑️</button>
+            <button class="action-btn" id="btn-copy-markdown" title="Copy Raw Markdown">📋</button>
+            <button class="action-btn" id="btn-download-note" title="Download Note (.md)">⬇️</button>
+          </div>
+        </div>
+
+        <!-- Note Article Body (Reading Mode) -->
+        <article class="note-content" id="note-reading-view">
+          <div class="arabic-header">
+            <p class="lead-quote" id="lead-quote">
+              وهنا بدأ التفكير بشكل أكبر في <span class="tag-tech">Cryptography</span>.
+            </p>
+          </div>
+
+          <h1 class="note-heading" id="note-heading">
+            <span class="chapter-number">7.</span> Industrial Revolution — Passphrases &amp; Shared Secrets
+          </h1>
+
+          <div class="note-body-text" id="note-body-text">
+            <p class="arabic-paragraph">
+              مع <span class="highlight-purple">Industrial Revolution</span> حصل تطور كبير في:
+            </p>
+
+            <ul class="bullet-list">
+              <li><span class="bullet-dot"></span> <span class="term">Machines</span></li>
+              <li><span class="bullet-dot"></span> <span class="term">Communication</span></li>
+              <li><span class="bullet-dot"></span> <span class="term">Telegraph</span></li>
+            </ul>
+
+            <p class="arabic-paragraph">
+              و الـ <span class="highlight-purple">Telegraph</span> أصبح <span class="tag-tech">Infrastructure</span> مهمة للتواصل وتبادل الإشارات المشفرة بين المراكز الحيوية.
+            </p>
+          </div>
+
+          <!-- Dynamic WikiLinks Footer -->
+          <div class="wikilinks-card" id="wikilinks-container">
+            <h4>🔗 LINKED REFERENCES (BACKLINKS):</h4>
+            <div class="wikilinks-tags" id="wikilinks-list">
+              <span class="wikilink-pill" data-target="auth-jwt">[[Authentication JWT]]</span>
+              <span class="wikilink-pill" data-target="shared-secrets">[[Shared Secrets & Keys]]</span>
+              <span class="wikilink-pill" data-target="caching">[[caching mechanisms]]</span>
+            </div>
+          </div>
+
+          <!-- Historical Telegraph Station Image Card -->
+          <div class="media-card" id="note-media-card">
+            <div class="media-frame">
+              <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=1200" alt="Historical Telegraph Station">
+              <div class="media-overlay">
+                <span class="overlay-tag">ARCHIVE // 1890 TELEGRAPH EXCHANGES & WIRED CRYPTOGRAPHY</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Code / Mathematical Block for Passphrase Entropy -->
+          <div class="code-card" id="note-code-card">
+            <div class="code-header">
+              <span>SHARED_SECRET_ENTROPY.py</span>
+              <span class="code-lang">Python 3.12</span>
+            </div>
+            <pre><code id="code-snippet">import math
+
+def calculate_passphrase_entropy(length: int, alphabet_size: int = 94) -> float:
+    """Calculates information-theoretic Shannon entropy bits for shared secrets."""
+    return round(length * math.log2(alphabet_size), 2)
+
+# Industrial Revolution telegraph transposition secret keys
+key_entropy = calculate_passphrase_entropy(length=24, alphabet_size=26)
+print(f"Telegraph Cipherspace Entropy: {key_entropy} bits")</code></pre>
+          </div>
+        </article>
+
+        <!-- Live Editor Mode (Hidden by default, toggled via Edit button) -->
+        <div class="note-editor-view" id="note-editor-view" style="display: none;">
+          <div class="editor-toolbar">
+            <button class="fmt-btn" data-fmt="bold" title="Bold"><b>B</b></button>
+            <button class="fmt-btn" data-fmt="italic" title="Italic"><i>I</i></button>
+            <button class="fmt-btn" data-fmt="h1" title="Heading 1">H1</button>
+            <button class="fmt-btn" data-fmt="h2" title="Heading 2">H2</button>
+            <button class="fmt-btn" data-fmt="code" title="Code Block">&lt;/&gt;</button>
+            <button class="fmt-btn" data-fmt="wikilink" title="Add WikiLink [[Note]]">[[ ]]</button>
+            <span class="editor-save-indicator" id="save-indicator">● Auto-Saved</span>
+          </div>
+          <textarea id="markdown-input" spellcheck="false" placeholder="Write markdown note here... Use [[NoteName]] to link notes together!"></textarea>
+        </div>
+      </main>
+
+      <!-- 4. Right Interactive Force-Directed Knowledge Graph Pane -->
+      <aside class="graph-pane" id="graph-pane">
+        <!-- Graph Pane Header with Search & Filter -->
+        <div class="graph-header">
+          <div class="graph-title-group">
+            <span class="graph-icon">🕸️</span>
+            <span class="graph-title">Graph view</span>
+          </div>
+
+          <div class="graph-search-container">
+            <input type="text" id="graph-search-input" placeholder="Search & Highlight Nodes..." autocomplete="off">
+          </div>
+
+          <div class="graph-tools">
+            <button class="g-btn" id="btn-reset-zoom" title="Reset View & Center">⟲</button>
+            <button class="g-btn" id="btn-toggle-physics" title="Pause / Resume Physics">⏸</button>
+            <button class="g-btn" id="btn-add-graph-node" title="Add Node from Graph">+ Node</button>
+          </div>
+        </div>
+
+        <!-- Cluster Filter Chips -->
+        <div class="cluster-chips-bar" id="cluster-chips-bar">
+          <button class="chip active" data-cluster="all">All</button>
+          <button class="chip cyan" data-cluster="cyan">Backend</button>
+          <button class="chip red" data-cluster="red">Security</button>
+          <button class="chip amber" data-cluster="amber">Architecture</button>
+          <button class="chip green" data-cluster="green">Network</button>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="canvas-container" id="canvas-container">
+          <canvas id="graph-canvas"></canvas>
+
+          <!-- Graph Status Overlay -->
+          <div class="graph-overlay-stats">
+            <span class="stat-pill"><b id="node-count">118</b> Nodes</span>
+            <span class="stat-pill"><b id="edge-count">246</b> Links</span>
+            <span class="stat-pill live" id="physics-status">● Physics Active</span>
+          </div>
+
+          <!-- Active Node Inspector Card -->
+          <div class="node-inspector-card" id="node-inspector-card" style="display: none;">
+            <div class="inspector-header">
+              <span class="inspector-type" id="inspect-type">SECURITY NODE</span>
+              <button class="inspector-close" id="btn-close-inspector">✕</button>
+            </div>
+            <h4 class="inspector-title" id="inspect-title">Cryptography</h4>
+            <div class="inspector-meta">
+              <span>Degree: <b id="inspect-degree">6 links</b></span>
+              <span>Cluster: <b id="inspect-cluster">Security Core</b></span>
+            </div>
+            <button class="btn-open-linked-note" id="btn-open-linked-note">Open Associated Note →</button>
+          </div>
+
+          <!-- Legend -->
+          <div class="graph-legend">
+            <div class="legend-item"><span class="legend-dot cyan"></span> Backend Core</div>
+            <div class="legend-item"><span class="legend-dot red"></span> Auth & Security</div>
+            <div class="legend-item"><span class="legend-dot amber"></span> Architecture</div>
+            <div class="legend-item"><span class="legend-dot green"></span> Network Protocols</div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- 5. Bottom Interactive Cyber Terminal Drawer -->
+    <div class="terminal-drawer" id="terminal-drawer">
+      <div class="terminal-header">
+        <div class="terminal-title">
+          <span class="term-dot"></span>
+          <span>CYBERVAULT REPL // SYSTEM SHELL (Bash / Python 3.12 / Vault CLI)</span>
+        </div>
+        <div class="terminal-actions">
+          <button class="term-btn" id="btn-clear-term" title="Clear">Clear</button>
+          <button class="term-btn" id="btn-close-term" title="Close">✕</button>
+        </div>
+      </div>
+      <div class="terminal-body" id="terminal-body">
+        <div class="term-line output">CyberVault Workstation v4.0.0-PRODUCTION [Offline PWA Ready]</div>
+        <div class="term-line output">Type 'help' for Vault commands or 'export' to backup your knowledge base.</div>
+        <div class="term-history" id="term-history"></div>
+        <div class="term-prompt-line">
+          <span class="term-prompt">tareq@cybervault:~$</span>
+          <input type="text" id="terminal-input" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="graph.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
